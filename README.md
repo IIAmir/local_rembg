@@ -1,18 +1,11 @@
-# local_rembg
+# Local Background Remover (Android/IOS)
 
-A new Flutter plugin project.
+## Overview
+The Background Removal Library is a powerful tool designed to seamlessly remove backgrounds from images in both Android and iOS platforms.This library provides developers with an easy-to-use interface to integrate background removal functionality into their mobile applications, enhancing user experience and enabling a wide range of creative possibilities.
 
-## Getting Started
+## Features
+- Offline Support: Perform background removal tasks without internet, ensuring fast performance in offline mode.
+- Cross-Platform: Remove backgrounds from images on both Android and iOS platforms.
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
-
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-The plugin project was generated without specifying the `--platforms` flag, no platforms are currently supported.
-To add platforms, run `flutter create -t plugin --platforms <platforms> .` in this directory.
-You can also find a detailed instruction on how to add platforms in the `pubspec.yaml` at https://flutter.dev/docs/development/packages-and-plugins/developing-packages#plugin-platforms.
+## Getting started
+To get started with the Background Removal Library do this steps
