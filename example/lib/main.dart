@@ -40,14 +40,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final ImagePicker picker = ImagePicker();
   ProcessStatus status = ProcessStatus.none;
   Uint8List? imageBytes;
 
   Future<void> _pickPhoto() async {
-    setState(() {
-      imageBytes = null;
-    });
-    final ImagePicker picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
@@ -55,10 +52,10 @@ class _MyHomePageState extends State<MyHomePage> {
         status = ProcessStatus.loading;
       });
       final String imagePath = pickedFile.path;
-      dynamic result = await LocalRembg.removeBackground(imagePath: imagePath);
-      if (result['status'] == 1) {
+      LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(imagePath: imagePath);
+      if (localRembgResultModel.status == 1) {
         setState(() {
-          imageBytes = Uint8List.fromList(result['imageBytes'] as List<int>);
+          imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
           status = ProcessStatus.success;
         });
       } else {
@@ -110,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton(
         onPressed: _pickPhoto,
-        child: const Icon(Icons.image),
+        child: const Icon(Icons.add_photo_alternate_outlined),
       ),
     );
   }

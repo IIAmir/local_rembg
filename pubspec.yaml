@@ -23,5 +23,8 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
+      android:
+        package: com.example.local_rembg
+        pluginClass: LocalRembgPlugin
       ios:
         pluginClass: LocalRembgPlugin
