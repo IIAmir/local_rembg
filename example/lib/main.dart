@@ -5,11 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_rembg/local_rembg.dart';
 
+enum ProcessStatus {
+  loading,
+  success,
+  failure,
+  none,
+}
+
 void main() {
   runApp(const MyApp());
 }
-
-enum ProcessStatus { loading, success, failure, none }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -18,6 +23,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Local Remove Background',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
@@ -51,8 +57,9 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         status = ProcessStatus.loading;
       });
-      final String imagePath = pickedFile.path;
-      LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(imagePath: imagePath);
+      LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
+        imagePath: pickedFile.path,
+      );
       if (localRembgResultModel.status == 1) {
         setState(() {
           imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
@@ -68,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -77,9 +85,12 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            if (imageBytes != null)
-              Image.memory(
-                imageBytes!,
+            if (imageBytes != null && status == ProcessStatus.success)
+              SizedBox(
+                height: screenSize.width * 0.5,
+                child: Image.memory(
+                  imageBytes!,
+                ),
               ),
             if (status == ProcessStatus.loading)
               const CupertinoActivityIndicator(
@@ -104,7 +115,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton(
         onPressed: _pickPhoto,
         child: const Icon(Icons.add_photo_alternate_outlined),

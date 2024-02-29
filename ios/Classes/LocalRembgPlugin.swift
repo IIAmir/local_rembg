@@ -30,7 +30,7 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
                     return
                 }
                 if let imageData = resultImage.pngData() {
-                    result(["status": 1, "imageBytes": FlutterStandardTypedData(bytes: imageData)])
+                    result(["status": 1, "message":"Success","imageBytes": FlutterStandardTypedData(bytes: imageData)])
                 } else {
                     result(["status": 0, "message": "Unable to convert image to bytes"])
                 }

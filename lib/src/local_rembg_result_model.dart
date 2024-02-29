@@ -10,11 +10,11 @@ class LocalRembgResultModel {
   });
 
   factory LocalRembgResultModel.fromMap(
-      Map<dynamic,dynamic> map,
-      ) =>
+    Map<dynamic, dynamic> result,
+  ) =>
       LocalRembgResultModel(
-        status: map['status'],
-        imageBytes: (map['imageBytes'] as List<dynamic>?)?.cast<int>(),
-        errorMessage: map['errorMessage'],
+        status: result['status'],
+        imageBytes: (result['imageBytes'] as List<dynamic>?)?.cast<int>(),
+        errorMessage: result['message'],
       );
 }

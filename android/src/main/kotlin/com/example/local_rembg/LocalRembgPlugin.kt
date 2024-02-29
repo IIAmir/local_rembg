@@ -18,13 +18,13 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import kotlinx.coroutines.*
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.ByteBuffer
 
 class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
     private var activity: AppCompatActivity? = null
     private lateinit var segmenter: Segmenter
-    private lateinit var buffer: ByteBuffer
     private var width = 0
     private var height = 0
 
@@ -35,8 +35,8 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         val segmentOptions = SelfieSegmenterOptions.Builder()
-                .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-                .build()
+            .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
+            .build()
         segmenter = Segmentation.getClient(segmentOptions)
 
         when (call.method) {
@@ -45,7 +45,7 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 if (imagePath != null) {
                     removeBackground(imagePath, result)
                 } else {
-                    result.error("INVALID_ARGUMENT", "Image path is null", null)
+                    sendErrorResult(result, 0, "Invalid arguments or unable to load image")
                 }
             }
 
@@ -55,42 +55,44 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        channel.setMethodCallHandler(null)
-    }
-
     private fun removeBackground(imagePath: String, result: MethodChannel.Result) {
-        try {
-            val bitmap = BitmapFactory.decodeFile(imagePath) ?: return
+        if (imagePath.isEmpty()) {
+            sendErrorResult(result, 0, "Image path cannot be empty")
+            return
+        }
 
-            val copyBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-            val inputImage = InputImage.fromBitmap(copyBitmap, 0)
+        val file = File(imagePath)
+        if (!file.exists()) {
+            sendErrorResult(result, 0, "Image file not found")
+            return
+        }
+
+        try {
+            val options = BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inSampleSize = 2
+            }
+
+            val bitmap = BitmapFactory.decodeFile(imagePath, options) ?: return
+
+            val inputImage = InputImage.fromBitmap(bitmap, 0)
 
             segmenter.process(inputImage)
-                    .addOnSuccessListener { segmentationMask ->
-                        buffer = segmentationMask.buffer
-                        width = segmentationMask.width
-                        height = segmentationMask.height
+                .addOnSuccessListener { segmentationMask ->
+                    width = segmentationMask.width
+                    height = segmentationMask.height
 
-                        processSegmentationMask(result, copyBitmap)
-                    }
-                    .addOnFailureListener { exception ->
-                        val response = mapOf(
-                                "status" to 0,
-                                "message" to exception.message
-                        )
-                        result.success(response)
-                    }
+                    processSegmentationMask(result, bitmap,segmentationMask.buffer)
+                }
+                .addOnFailureListener { exception ->
+                    sendErrorResult(result, 0, exception.message)
+                }
         } catch (e: Exception) {
-            val response = mapOf(
-                    "status" to 0,
-                    "message" to e.message
-            )
-            result.success(response)
+            sendErrorResult(result, 0, e.message)
         }
     }
 
-    private fun processSegmentationMask(result: MethodChannel.Result, bitmap: Bitmap) {
+    private fun processSegmentationMask(result: MethodChannel.Result, bitmap: Bitmap,buffer: ByteBuffer) {
         CoroutineScope(Dispatchers.IO).launch {
             val bgConf = FloatArray(width * height)
             buffer.rewind()
@@ -141,12 +143,24 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val processedImageBytes = outputStream.toByteArray()
 
             val response = mapOf(
-                    "status" to 1,
-                    "imageBytes" to processedImageBytes.toList(),
-                    "message" to "Success"
+                "status" to 1,
+                "imageBytes" to processedImageBytes.toList(),
+                "message" to "Success"
             )
             result.success(response)
         }
+    }
+
+    private fun sendErrorResult(result: MethodChannel.Result, status: Int, errorMessage: String?) {
+        val errorResult = mapOf(
+            "status" to status,
+            "message" to errorMessage
+        )
+        result.success(errorResult)
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel.setMethodCallHandler(null)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
