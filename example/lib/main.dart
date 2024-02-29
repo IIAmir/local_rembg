@@ -87,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             if (imageBytes != null && status == ProcessStatus.success)
               SizedBox(
-                height: screenSize.width * 0.5,
+                height: screenSize.width * 0.8,
                 child: Image.memory(
                   imageBytes!,
                 ),
