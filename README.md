@@ -1,5 +1,6 @@
 # Local Background Remover (Android/IOS)
-<img src="/demo/after_befor.png" height="500">
+
+<img src="https://file.io/42mdIzLQYQhG"/>
 
 ## Overview
 
