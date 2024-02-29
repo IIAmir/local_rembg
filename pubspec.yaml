@@ -1,6 +1,6 @@
 name: local_rembg
 description: A flutter plugin for remove background from image
-version: 0.0.2
+version: 0.0.3
 repository: https://github.com/IIAmir/local_rembg
 homepage: https://github.com/IIAmir/local_rembg
 View/report issues: https://github.com/IIAmir/local_rembg/issues
