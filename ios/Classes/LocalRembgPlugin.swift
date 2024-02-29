@@ -40,34 +40,6 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func applyBackgroundMask(_ maskImage: CGImage?, image: UIImage, completion: @escaping (UIImage?) -> Void) {
-        guard let maskImage = maskImage, let segmentationRequest = self.segmentationRequest else {
-            completion(nil)
-            return
-        }
-
-        let mainImage = CIImage(cgImage: image.cgImage!)
-        let originalSize = mainImage.extent.size
-
-        var maskCI = CIImage(cgImage: maskImage)
-        let scaleX = originalSize.width / maskCI.extent.width
-        let scaleY = originalSize.height / maskCI.extent.height
-        maskCI = maskCI.transformed(by: .init(scaleX: scaleX, y: scaleY))
-
-        DispatchQueue.main.async {
-            let filter = CIFilter(name: "CIBlendWithMask")
-            filter?.setValue(mainImage, forKey: kCIInputImageKey)
-            filter?.setValue(maskCI, forKey: kCIInputMaskImageKey)
-
-            if let outputImage = filter?.outputImage {
-                let blendedImage = UIImage(ciImage: outputImage)
-                completion(blendedImage)
-            } else {
-                completion(nil)
-            }
-        }
-    }
-
     private func applyFilter(image: UIImage ,completion: @escaping (UIImage?) -> Void) {
         guard let originalCG = image.cgImage, let segmentationRequest = self.segmentationRequest else {
             return completion(nil)
@@ -99,6 +71,36 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
             return applyBackgroundMask(maskImage, image: resizedImage, completion: completion)
         } catch {
             return completion(nil)
+        }
+    }
+
+    // This function applies a background mask to the given image using Core Image filters.
+    // It composites the original image with the mask to produce an image with the background removed.
+    private func applyBackgroundMask(_ maskImage: CGImage?, image: UIImage, completion: @escaping (UIImage?) -> Void) {
+        guard let maskImage = maskImage, let segmentationRequest = self.segmentationRequest else {
+            completion(nil)
+            return
+        }
+
+        let mainImage = CIImage(cgImage: image.cgImage!)
+        let originalSize = mainImage.extent.size
+
+        var maskCI = CIImage(cgImage: maskImage)
+        let scaleX = originalSize.width / maskCI.extent.width
+        let scaleY = originalSize.height / maskCI.extent.height
+        maskCI = maskCI.transformed(by: .init(scaleX: scaleX, y: scaleY))
+
+        DispatchQueue.main.async {
+            let filter = CIFilter(name: "CIBlendWithMask")
+            filter?.setValue(mainImage, forKey: kCIInputImageKey)
+            filter?.setValue(maskCI, forKey: kCIInputMaskImageKey)
+
+            if let outputImage = filter?.outputImage {
+                let blendedImage = UIImage(ciImage: outputImage)
+                completion(blendedImage)
+            } else {
+                completion(nil)
+            }
         }
     }
 

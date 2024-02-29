@@ -35,8 +35,8 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         val segmentOptions = SelfieSegmenterOptions.Builder()
-            .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-            .build()
+                .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
+                .build()
         segmenter = Segmentation.getClient(segmentOptions)
 
         when (call.method) {
@@ -55,6 +55,9 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    // Removes the background from an image by decoding the image into a Bitmap,
+    // processing the segmentation mask using ML Kit's segmentation API, and then processing the segmentation mask
+    // to remove the background. Takes the file path of the image as input.
     private fun removeBackground(imagePath: String, result: MethodChannel.Result) {
         if (imagePath.isEmpty()) {
             sendErrorResult(result, 0, "Image path cannot be empty")
@@ -78,21 +81,24 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val inputImage = InputImage.fromBitmap(bitmap, 0)
 
             segmenter.process(inputImage)
-                .addOnSuccessListener { segmentationMask ->
-                    width = segmentationMask.width
-                    height = segmentationMask.height
+                    .addOnSuccessListener { segmentationMask ->
+                        width = segmentationMask.width
+                        height = segmentationMask.height
 
-                    processSegmentationMask(result, bitmap,segmentationMask.buffer)
-                }
-                .addOnFailureListener { exception ->
-                    sendErrorResult(result, 0, exception.message)
-                }
+                        processSegmentationMask(result, bitmap, segmentationMask.buffer)
+                    }
+                    .addOnFailureListener { exception ->
+                        sendErrorResult(result, 0, exception.message)
+                    }
         } catch (e: Exception) {
             sendErrorResult(result, 0, e.message)
         }
     }
 
-    private fun processSegmentationMask(result: MethodChannel.Result, bitmap: Bitmap,buffer: ByteBuffer) {
+    // Processes the segmentation mask obtained from ML Kit's segmentation API.
+    // Creates a new Bitmap, sets transparent pixels for the background, and crops the image to remove excess
+    // transparent areas.
+    private fun processSegmentationMask(result: MethodChannel.Result, bitmap: Bitmap, buffer: ByteBuffer) {
         CoroutineScope(Dispatchers.IO).launch {
             val bgConf = FloatArray(width * height)
             buffer.rewind()
@@ -143,9 +149,9 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val processedImageBytes = outputStream.toByteArray()
 
             val response = mapOf(
-                "status" to 1,
-                "imageBytes" to processedImageBytes.toList(),
-                "message" to "Success"
+                    "status" to 1,
+                    "imageBytes" to processedImageBytes.toList(),
+                    "message" to "Success"
             )
             result.success(response)
         }
@@ -153,8 +159,8 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     private fun sendErrorResult(result: MethodChannel.Result, status: Int, errorMessage: String?) {
         val errorResult = mapOf(
-            "status" to status,
-            "message" to errorMessage
+                "status" to status,
+                "message" to errorMessage
         )
         result.success(errorResult)
     }

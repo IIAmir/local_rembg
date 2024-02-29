@@ -6,3 +6,7 @@
 
 * Remove background from image (Android)
 * Fix Bugs
+
+## 0.0.3
+
+* Add documentation
