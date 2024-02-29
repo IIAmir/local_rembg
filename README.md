@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://file.io/42mdIzLQYQhG"/>
+<img src="https://fastupload.io/secure/file/EL73gbPoYm9Ba"/>
 
 ## Overview
 
