@@ -1,6 +1,6 @@
 name: local_rembg
 description: A Flutter plugin for offline background removal in images, ideal for enhancing photo editing capabilities within mobile apps.
-version: 0.0.4
+version: 0.0.5
 repository: https://github.com/IIAmir/local_rembg
 homepage: https://github.com/IIAmir/local_rembg
 View/report issues: https://github.com/IIAmir/local_rembg/issues

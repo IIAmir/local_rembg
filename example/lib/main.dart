@@ -51,13 +51,15 @@ class _MyHomePageState extends State<MyHomePage> {
   Uint8List? imageBytes;
 
   Future<void> _pickPhoto() async {
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
         status = ProcessStatus.loading;
       });
-      LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
+      LocalRembgResultModel localRembgResultModel =
+          await LocalRembg.removeBackground(
         imagePath: pickedFile.path,
       );
       if (localRembgResultModel.status == 1) {

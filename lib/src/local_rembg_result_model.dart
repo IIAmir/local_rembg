@@ -1,5 +1,4 @@
 class LocalRembgResultModel {
-
   /// The [status] property indicates the outcome of the operation:
   /// - 1 for success
   /// - 0 for failure
