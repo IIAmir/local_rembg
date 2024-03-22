@@ -19,9 +19,6 @@ class LocalRembg {
         'removeBackground',
         imagePath,
       );
-      if (kDebugMode) {
-        print(methodChannelResult);
-      }
       return LocalRembgResultModel.fromMap(
         methodChannelResult,
       );
