@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://fastupload.io/secure/file/RMKGJX2r431oP"/>
+<img src="https://fastupload.io/secure/file/7d5GLEjgamxRJ"/>
 
 ## Overview
 
@@ -26,7 +26,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^0.0.5
+  local_rembg: ^0.0.7
 ```
 
 Install the new dependency:
@@ -41,6 +41,7 @@ Call the `removeBackground` function in your code:
 Future<LocalRembgResultModel> removeBackground() async {
   LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
      imagePath: // Your Image Path,
+     cropTheImage: // Crop the segmented image (Default true)
   );
   return localRembgResultModel;
 }

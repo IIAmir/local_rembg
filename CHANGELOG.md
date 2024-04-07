@@ -18,3 +18,7 @@
 ## 0.0.6
 
 * Crop the segmented image
+
+## 0.0.7
+
+* Change Readme
