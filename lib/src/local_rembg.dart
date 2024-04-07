@@ -10,7 +10,10 @@ class LocalRembg {
 
   /// Removes the background from the specified image file.
   /// Returns a [LocalRembgResultModel] representing the result of the operation.
-  /// Throws an error if the provided image path ['.png', '.jpg', '.jpeg', '.heic'] is invalid or unsupported.
+  /// [imagePath] Throws an error if the provided image path ['.png', '.jpg', '.jpeg', '.heic'] is invalid or unsupported.
+  /// [cropTheImage] Specifies whether to crop the segmented image after removing the background.
+  /// If set to `true`, the segmented image will be cropped to remove any transparent or empty areas.
+  /// If set to `false`, the segmented image will be returned without any cropping.
   static Future<LocalRembgResultModel> removeBackground({
     required String imagePath,
     bool? cropTheImage = true,

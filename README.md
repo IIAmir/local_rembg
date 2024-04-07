@@ -40,8 +40,9 @@ Call the `removeBackground` function in your code:
 ```dart
 Future<LocalRembgResultModel> removeBackground() async {
   LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
-      imagePath: // Your Image Path,
+     imagePath: // Your Image Path,
   );
+  return localRembgResultModel;
 }
 ```
 
@@ -51,4 +52,5 @@ Explore our [Example Project](./example) to see how the Local Rembg SDK can be u
 application.
 
 ## License Terms
+
 This library is provided under the [Apache License](LICENSE).
