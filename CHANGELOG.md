@@ -6,3 +6,11 @@
 
 * Remove background from image (Android)
 * Fix Bugs
+
+## 0.0.3
+
+* Add documentation
+
+## 0.0.5
+
+* Change Readme Example

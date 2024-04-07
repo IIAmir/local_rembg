@@ -46,6 +46,8 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         }
     }
 
+    // This function applies a background mask to the given image using Core Image filters.
+    // It composites the original image with the mask to produce an image with the background removed.
     private func applyBackgroundMask(_ maskImage: CGImage?, image: UIImage, shouldCropImage: Bool, completion: @escaping (UIImage?, Int) -> Void) {
         guard let maskImage = maskImage, let segmentationRequest = self.segmentationRequest else {
             completion(nil, 0)

@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://file.io/42mdIzLQYQhG"/>
+<img src="https://fastupload.io/secure/file/RMKGJX2r431oP"/>
 
 ## Overview
 
@@ -26,7 +26,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^0.0.2
+  local_rembg: ^0.0.5
 ```
 
 Install the new dependency:
@@ -47,7 +47,7 @@ Future<LocalRembgResultModel> removeBackground() async {
 
 ## Example
 
-Explore our [example project](./example) to see how the Local Rembg SDK can be used in a Flutter
+Explore our [Example Project](./example) to see how the Local Rembg SDK can be used in a Flutter
 application.
 
 ## License Terms

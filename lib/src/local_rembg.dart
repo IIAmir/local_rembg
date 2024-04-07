@@ -8,6 +8,9 @@ class LocalRembg {
     'methodChannel.localRembg',
   );
 
+  /// Removes the background from the specified image file.
+  /// Returns a [LocalRembgResultModel] representing the result of the operation.
+  /// Throws an error if the provided image path ['.png', '.jpg', '.jpeg', '.heic'] is invalid or unsupported.
   static Future<LocalRembgResultModel> removeBackground({
     required String imagePath,
     bool? cropTheImage = true,

@@ -56,6 +56,9 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    // Removes the background from an image by decoding the image into a Bitmap,
+    // processing the segmentation mask using ML Kit's segmentation API, and then processing the segmentation mask
+    // to remove the background. Takes the file path of the image as input.
     private fun removeBackground(
         imagePath: String,
         shouldCropImage: Boolean,
@@ -97,11 +100,18 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 .addOnFailureListener { exception ->
                     sendErrorResult(result, 0, exception.message)
                 }
+                .addOnFailureListener { exception ->
+                    sendErrorResult(result, 0, exception.message)
+                }
         } catch (e: Exception) {
             sendErrorResult(result, 0, e.message)
         }
     }
 
+
+    // Processes the segmentation mask obtained from ML Kit's segmentation API.
+    // Creates a new Bitmap, sets transparent pixels for the background, and crops the image to remove excess
+    // transparent areas.
     private fun processSegmentationMask(
         result: MethodChannel.Result,
         bitmap: Bitmap,
