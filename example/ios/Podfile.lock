@@ -4,7 +4,7 @@ PODS:
     - Flutter
   - integration_test (0.0.1):
     - Flutter
-  - local_rembg (0.0.1):
+  - local_rembg (0.0.2):
     - Flutter
 
 DEPENDENCIES:
@@ -27,7 +27,7 @@ SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   image_picker_ios: 99dfe1854b4fa34d0364e74a78448a0151025425
   integration_test: 13825b8a9334a850581300559b8839134b124670
-  local_rembg: 20e5aa124006383930dadcff878e6b90e0060a31
+  local_rembg: 6aaace219d28e7b7372c32c2596d2f0ed07cfef9
 
 PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796
 

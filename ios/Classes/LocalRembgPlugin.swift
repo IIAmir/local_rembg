@@ -19,18 +19,24 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         segmentationRequest?.outputPixelFormat = kCVPixelFormatType_OneComponent8
         switch call.method {
         case "removeBackground":
-            guard let imagePath = call.arguments as? String,
+            guard let arguments = call.arguments as? [String: Any],
+                  let imagePath = arguments["imagePath"] as? String,
+                  let shouldCropImage = arguments["cropImage"] as? Bool,
                   let image = UIImage(contentsOfFile: imagePath) else {
                 result(["status": 0, "message": "Invalid arguments or unable to load image"])
                 return
             }
-            applyFilter(image: image) { resultImage in
+            applyFilter(image: image, shouldCropImage: shouldCropImage) { resultImage, numFaces in
                 guard let resultImage = resultImage else {
                     result(["status": 0, "message": "Unable to process image"])
                     return
                 }
                 if let imageData = resultImage.pngData() {
-                    result(["status": 1, "message":"Success","imageBytes": FlutterStandardTypedData(bytes: imageData)])
+                    if numFaces >= 1 {
+                        result(["status": 1, "message": "Success", "imageBytes": FlutterStandardTypedData(bytes: imageData)])
+                    }else{
+                        result(["status": 0, "message": "No person detected in the provided image. Please try with a different image."])
+                    }
                 } else {
                     result(["status": 0, "message": "Unable to convert image to bytes"])
                 }
@@ -40,9 +46,9 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func applyBackgroundMask(_ maskImage: CGImage?, image: UIImage, completion: @escaping (UIImage?) -> Void) {
+    private func applyBackgroundMask(_ maskImage: CGImage?, image: UIImage, shouldCropImage: Bool, completion: @escaping (UIImage?, Int) -> Void) {
         guard let maskImage = maskImage, let segmentationRequest = self.segmentationRequest else {
-            completion(nil)
+            completion(nil, 0)
             return
         }
 
@@ -60,23 +66,27 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
             filter?.setValue(maskCI, forKey: kCIInputMaskImageKey)
 
             if let outputImage = filter?.outputImage {
-                let blendedImage = UIImage(ciImage: outputImage)
-                completion(blendedImage)
-            } else {
-                completion(nil)
+                let context = CIContext()
+                if let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
+                    let numFaces = self.countFaces(image: mainImage)
+                    let trimmedImage = shouldCropImage ? UIImage(cgImage: cgImage).trimmed() : UIImage(cgImage: cgImage)
+                    completion(trimmedImage, numFaces)
+                } else {
+                    completion(nil, 0)
+                }
             }
         }
     }
 
-    private func applyFilter(image: UIImage ,completion: @escaping (UIImage?) -> Void) {
+    private func applyFilter(image: UIImage ,shouldCropImage: Bool, completion: @escaping (UIImage?, Int) -> Void) {
         guard let originalCG = image.cgImage, let segmentationRequest = self.segmentationRequest else {
-            return completion(nil)
+            return completion(nil, 0)
         }
 
         let requiredSize: CGFloat = 600.0
 
         if image.size.width < requiredSize || image.size.height < requiredSize {
-            completion(nil)
+            completion(nil, 0)
             return
         }
 
@@ -91,14 +101,14 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
             try handler.perform([segmentationRequest])
 
             guard let maskPixelBuffer = segmentationRequest.results?.first?.pixelBuffer else {
-                return completion(nil)
+                return completion(nil, 0)
             }
 
             let maskImage = CGImage.create(pixelBuffer: maskPixelBuffer)
 
-            return applyBackgroundMask(maskImage, image: resizedImage, completion: completion)
+            return applyBackgroundMask(maskImage, image: resizedImage,shouldCropImage: shouldCropImage, completion: completion)
         } catch {
-            return completion(nil)
+            return completion(nil, 0)
         }
     }
 
@@ -119,5 +129,95 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         UIGraphicsEndImageContext()
 
         return newImage ?? UIImage()
+    }
+    
+    private func countFaces(image: CIImage) -> Int {
+        let request = VNDetectFaceRectanglesRequest()
+        let requestHandler = VNImageRequestHandler(ciImage: image)
+        do {
+            try requestHandler.perform([request])
+            if let results = request.results {
+                return results.count
+            }
+        } catch {
+            print("Unable to perform face detection: \(error).")
+        }
+        return 0
+    }
+}
+
+extension UIImage {
+
+    func trimmed() -> UIImage {
+        let newRect = cropRect()
+        if let imageRef = cgImage?.cropping(to: newRect) {
+            return UIImage(cgImage: imageRef)
+        }
+        return self
+    }
+
+    private func cropRect() -> CGRect {
+        let cgImage = self.cgImage!
+
+        let bitmapBytesPerRow = cgImage.width * 4
+        let bitmapByteCount = bitmapBytesPerRow * cgImage.height
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapData = malloc(bitmapByteCount)
+
+        if bitmapData == nil {
+            return CGRect(x: 0, y: 0, width: 0, height: 0)
+        }
+
+        guard let context = CGContext(
+            data: bitmapData,
+            width: cgImage.width,
+            height: cgImage.height,
+            bitsPerComponent: 8,
+            bytesPerRow: bitmapBytesPerRow,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+        ) else {
+            return CGRect(x: 0, y: 0, width: 0, height: 0)
+        }
+
+        let height = cgImage.height
+        let width = cgImage.width
+
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.clear(rect)
+        context.draw(cgImage, in: rect)
+
+        guard let data = context.data else {
+            return CGRect(x: 0, y: 0, width: 0, height: 0)
+        }
+
+        var lowX = width
+        var lowY = height
+        var highX: Int = 0
+        var highY: Int = 0
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let pixelIndex = (width * y + x) * 4
+                let color = data.load(fromByteOffset: pixelIndex, as: UInt32.self)
+
+                if color != 0 {
+                    if x < lowX {
+                        lowX = x
+                    }
+                    if x > highX {
+                        highX = x
+                    }
+                    if y < lowY {
+                        lowY = y
+                    }
+                    if y > highY {
+                        highY = y
+                    }
+                }
+            }
+        }
+
+        return CGRect(x: lowX, y: lowY, width: highX - lowX, height: highY - lowY)
     }
 }

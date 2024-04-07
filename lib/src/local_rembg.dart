@@ -10,11 +10,15 @@ class LocalRembg {
 
   static Future<LocalRembgResultModel> removeBackground({
     required String imagePath,
+    bool? cropTheImage = true,
   }) async {
     if (imagePath.typeIsImage) {
       Map<dynamic, dynamic> methodChannelResult = await _channel.invokeMethod(
         'removeBackground',
-        imagePath,
+        {
+          'imagePath': imagePath,
+          'cropImage': cropTheImage,
+        },
       );
       if (kDebugMode) {
         print(methodChannelResult);
