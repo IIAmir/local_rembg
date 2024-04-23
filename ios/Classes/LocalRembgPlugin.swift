@@ -19,6 +19,10 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         segmentationRequest?.outputPixelFormat = kCVPixelFormatType_OneComponent8
         switch call.method {
         case "removeBackground":
+            if(isRunningOnSimulator()){
+                result(["status": 0, "message": "Please use a real device"])
+                return
+            }
             guard let arguments = call.arguments as? [String: Any],
                   let imagePath = arguments["imagePath"] as? String,
                   let shouldCropImage = arguments["cropImage"] as? Bool,
@@ -145,6 +149,14 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
             print("Unable to perform face detection: \(error).")
         }
         return 0
+    }
+    
+    private func isRunningOnSimulator() -> Bool {
+        #if targetEnvironment(simulator)
+            return true
+        #else
+            return false
+        #endif
     }
 }
 

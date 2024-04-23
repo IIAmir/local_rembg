@@ -26,7 +26,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^0.0.7
+  local_rembg: ^0.0.8
 ```
 
 Install the new dependency:

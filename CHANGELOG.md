@@ -22,3 +22,7 @@
 ## 0.0.7
 
 * Change Readme
+
+## 0.0.8
+
+* Check if the device is real
