@@ -16,9 +16,12 @@ user experience and enabling a wide range of creative possibilities.
 
 ## Features
 
-- Offline Support: Perform background removal tasks without internet, ensuring fast performance in
-  offline mode.
-- Cross-Platform: Remove backgrounds from images on both Android and iOS platforms.
+- Offline Support: Remove backgrounds without internet for quick performance offline.
+- Object and Person Detection: Easily remove backgrounds from both objects and people.
+- Cross-Platform: Delete backgrounds on Android and iOS.
+
+## Note
+If you only require person detection on iOS, consider using version 0.0.8 to reduce your app's size.
 
 ## Getting started
 
@@ -26,7 +29,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^0.0.8
+  local_rembg: ^1.0.0
 ```
 
 Install the new dependency:

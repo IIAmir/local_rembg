@@ -26,3 +26,7 @@
 ## 0.0.8
 
 * Check if the device is real
+
+## 1.0.0
+
+* Add object detection for ios
