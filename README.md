@@ -24,9 +24,11 @@ user experience and enabling a wide range of creative possibilities.
 
 Add the plugin package to the `pubspec.yaml` file in your project:
 
+`If you only require person detection on iOS,consider using version 0.0.8 to reduce your app's size.`
+
 ```yaml
 dependencies:
-  local_rembg: ^1.0.0 // If you only require person detection on iOS, consider using version 0.0.8 to reduce your app's size.
+  local_rembg: ^1.0.0
 ```
 
 Install the new dependency:
