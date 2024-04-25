@@ -20,16 +20,13 @@ user experience and enabling a wide range of creative possibilities.
 - Object and Person Detection: Easily remove backgrounds from both objects and people.
 - Cross-Platform: Delete backgrounds on Android and iOS.
 
-## Note
-If you only require person detection on iOS, consider using version 0.0.8 to reduce your app's size.
-
 ## Getting started
 
 Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^1.0.0
+  local_rembg: ^1.0.0 // If you only require person detection on iOS, consider using version 0.0.8 to reduce your app's size.
 ```
 
 Install the new dependency:
