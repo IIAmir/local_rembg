@@ -30,3 +30,8 @@
 ## 1.0.0
 
 * Add object detection for ios
+
+## 1.1.1
+
+* Support Uint8List in IOS
+* Prevent to resize image in person segmentation in IOS

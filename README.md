@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://fs2.fastupload.io/cache/plugins/filepreviewer/281125/402b558eb203d830dacd501ebb5e47ffefcc85aa56e2d00939ff402403941923/1100x800_cropped.jpg"/>
+<img src="https://i.ibb.co/09zQZP5/befor-after2.png"/>
 
 ## Overview
 
@@ -13,8 +13,8 @@ If you want to remove objects from your image in Flutter, you can use the [Objec
 
 ## System requirements
 
-- iOS: 15
-- Android: 4.4 (SDK 19)
+- iOS: 15+
+- Android: 4.4+ (SDK 19)
 
 ## Features
 
@@ -30,7 +30,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^1.1.0
+  local_rembg: ^1.1.1
 ```
 
 Install the new dependency:
