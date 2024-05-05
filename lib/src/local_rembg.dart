@@ -26,7 +26,8 @@ class LocalRembg {
       return LocalRembgResultModel(
         status: 0,
         imageBytes: null,
-        errorMessage: "You must provide either 'imagePath' or 'imageUint8List'.",
+        errorMessage:
+            "You must provide either 'imagePath' or 'imageUint8List'.",
       );
     }
 
