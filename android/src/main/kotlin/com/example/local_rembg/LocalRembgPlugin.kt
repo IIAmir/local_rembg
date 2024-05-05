@@ -43,8 +43,9 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 val arguments = call.arguments as? Map<String, Any>
                 val imagePath = arguments?.get("imagePath") as? String
                 val shouldCropImage = arguments?.get("cropImage") as? Boolean
+
                 if (imagePath != null) {
-                    removeBackground(imagePath, shouldCropImage!!, result)
+                    removeBackgroundFromFile(imagePath, shouldCropImage!!, result)
                 } else {
                     sendErrorResult(result, 0, "Invalid arguments or unable to load image")
                 }
@@ -56,10 +57,7 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    // Removes the background from an image by decoding the image into a Bitmap,
-    // processing the segmentation mask using ML Kit's segmentation API, and then processing the segmentation mask
-    // to remove the background. Takes the file path of the image as input.
-    private fun removeBackground(
+    private fun removeBackgroundFromFile(
         imagePath: String,
         shouldCropImage: Boolean,
         result: MethodChannel.Result
@@ -108,10 +106,6 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-
-    // Processes the segmentation mask obtained from ML Kit's segmentation API.
-    // Creates a new Bitmap, sets transparent pixels for the background, and crops the image to remove excess
-    // transparent areas.
     private fun processSegmentationMask(
         result: MethodChannel.Result,
         bitmap: Bitmap,

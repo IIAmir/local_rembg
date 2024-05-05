@@ -58,16 +58,18 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         status = ProcessStatus.loading;
       });
+      Uint8List pickedFileBytes = await pickedFile.readAsBytes();
       LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
-        imagePath: pickedFile.path,
+        // imagePath: pickedFile.path,
+        imageUint8List: pickedFileBytes,
       );
-      message = localRembgResultModel.errorMessage;
       if (localRembgResultModel.status == 1) {
+        imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
         setState(() {
-          imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
           status = ProcessStatus.success;
         });
       } else {
+        message = localRembgResultModel.errorMessage;
         setState(() {
           status = ProcessStatus.failure;
         });

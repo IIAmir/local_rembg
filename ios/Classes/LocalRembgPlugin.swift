@@ -25,13 +25,25 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
                 return
             }
             guard let arguments = call.arguments as? [String: Any],
-                  let imagePath = arguments["imagePath"] as? String,
-                  let shouldCropImage = arguments["cropImage"] as? Bool,
-                  let image = UIImage(contentsOfFile: imagePath) else {
-                result(["status": 0, "message": "Invalid arguments or unable to load image"])
+                  let shouldCropImage = arguments["cropImage"] as? Bool else {
+                result(["status": 0, "message": "Invalid arguments"])
                 return
             }
-            applyFilter(image: image, shouldCropImage: shouldCropImage) { [self] resultImage, numFaces in
+            
+            var image: UIImage?
+            
+            if let imagePath = arguments["imagePath"] as? String {
+                image = UIImage(contentsOfFile: imagePath)
+            } else if let defaultImageUint8List = arguments["imageUint8List"] as? FlutterStandardTypedData {
+                image = UIImage(data: defaultImageUint8List.data)
+            }
+            
+            guard let loadedImage = image else {
+                result(["status": 0, "message": "Unable to load image"])
+                return
+            }
+            
+            applyFilter(image: loadedImage, shouldCropImage: shouldCropImage) { [self] resultImage, numFaces in
                 guard let resultImage = resultImage else {
                     result(["status": 0, "message": "Unable to process image"])
                     return
@@ -40,7 +52,7 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
                     if numFaces >= 1 {
                         result(["status": 1, "message": "Success", "imageBytes": FlutterStandardTypedData(bytes: imageData)])
                     } else {
-                        if let removedBackgroundImage = removeBackground(image: image) {
+                        if let removedBackgroundImage = removeBackground(image: loadedImage) {
                             if let remBgImageData = removedBackgroundImage.pngData() {
                                 result(["status": 1, "message": "Success", "imageBytes": remBgImageData])
                             }else{
@@ -98,20 +110,9 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
         guard let originalCG = image.cgImage, let segmentationRequest = self.segmentationRequest else {
             return completion(nil, 0)
         }
+        let fixedImage = fixImageOrientation(image)
         
-        let requiredSize: CGFloat = 600.0
-        
-        if image.size.width < requiredSize || image.size.height < requiredSize {
-            completion(nil, 0)
-            return
-        }
-        
-        let newWidth: CGFloat = 600.0
-        let newHeight: CGFloat = 600.0
-        
-        let resizedImage = resizeImage(image: image, targetSize: CGSize(width: newWidth, height: newHeight))
-        
-        let handler = VNImageRequestHandler(cgImage: resizedImage.cgImage!)
+        let handler = VNImageRequestHandler(cgImage: fixedImage.cgImage!)
         
         do {
             try handler.perform([segmentationRequest])
@@ -122,29 +123,23 @@ public class LocalRembgPlugin: NSObject, FlutterPlugin {
             
             let maskImage = CGImage.create(pixelBuffer: maskPixelBuffer)
             
-            return applyBackgroundMask(maskImage, image: resizedImage,shouldCropImage: shouldCropImage, completion: completion)
+            return applyBackgroundMask(maskImage, image: fixedImage,shouldCropImage: shouldCropImage, completion: completion)
         } catch {
             return completion(nil, 0)
         }
     }
     
-    private func resizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
-        let size = image.size
+    private func fixImageOrientation(_ image: UIImage) -> UIImage {
+        if image.imageOrientation == .up {
+            return image
+        }
         
-        let widthRatio  = targetSize.width / size.width
-        let heightRatio = targetSize.height / size.height
-        
-        let scaleFactor = min(widthRatio, heightRatio)
-        
-        let scaledWidth  = size.width * scaleFactor
-        let scaledHeight = size.height * scaleFactor
-        
-        UIGraphicsBeginImageContextWithOptions(CGSize(width: scaledWidth, height: scaledHeight), false, 0.0)
-        image.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
-        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let fixedImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
-        return newImage ?? UIImage()
+        return fixedImage ?? image
     }
     
     private func countFaces(image: CIImage) -> Int {

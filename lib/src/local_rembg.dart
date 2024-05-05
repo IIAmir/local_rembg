@@ -15,29 +15,39 @@ class LocalRembg {
   /// If set to `true`, the segmented image will be cropped to remove any transparent or empty areas.
   /// If set to `false`, the segmented image will be returned without any cropping.
   static Future<LocalRembgResultModel> removeBackground({
-    required String imagePath,
+    String? imagePath,
+    Uint8List? imageUint8List,
     bool? cropTheImage = true,
   }) async {
-    if (imagePath.typeIsImage) {
-      Map<dynamic, dynamic> methodChannelResult = await _channel.invokeMethod(
-        'removeBackground',
-        {
-          'imagePath': imagePath,
-          'cropImage': cropTheImage,
-        },
+    if (imagePath == null && imageUint8List == null) {
+      return LocalRembgResultModel(
+        status: 0,
+        imageBytes: null,
+        errorMessage: "You must provide either 'imagePath' or 'imageUint8List'.",
       );
-      if (kDebugMode) {
-        print(methodChannelResult);
-      }
-      return LocalRembgResultModel.fromMap(
-        methodChannelResult,
-      );
-    } else {
+    }
+
+    if (imagePath != null && !imagePath.typeIsImage) {
       return LocalRembgResultModel(
         status: 0,
         imageBytes: null,
         errorMessage: 'Invalid image type!',
       );
     }
+
+    Map<dynamic, dynamic> methodChannelResult = await _channel.invokeMethod(
+      'removeBackground',
+      {
+        'imagePath': imagePath,
+        'imageUint8List': imageUint8List,
+        'cropImage': cropTheImage,
+      },
+    );
+    if (kDebugMode) {
+      print(methodChannelResult);
+    }
+    return LocalRembgResultModel.fromMap(
+      methodChannelResult,
+    );
   }
 }
