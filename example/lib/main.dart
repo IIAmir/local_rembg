@@ -58,10 +58,10 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         status = ProcessStatus.loading;
       });
-      Uint8List pickedFileBytes = await pickedFile.readAsBytes();
+      // Uint8List pickedFileBytes = await pickedFile.readAsBytes();
       LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
-        // imagePath: pickedFile.path,
-        imageUint8List: pickedFileBytes,
+        imagePath: pickedFile.path,
+        // imageUint8List: pickedFileBytes,
       );
       if (localRembgResultModel.status == 1) {
         imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
