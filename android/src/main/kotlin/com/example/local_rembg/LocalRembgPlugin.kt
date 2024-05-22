@@ -9,7 +9,6 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.Segmentation
 import com.google.mlkit.vision.segmentation.Segmenter
 import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
-import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -35,15 +34,18 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         val segmentOptions = SelfieSegmenterOptions.Builder()
-                .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-                .build()
+            .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
+            .build()
         segmenter = Segmentation.getClient(segmentOptions)
 
         when (call.method) {
             "removeBackground" -> {
-                val imagePath = call.arguments as? String
+                val arguments = call.arguments as? Map<String, Any>
+                val imagePath = arguments?.get("imagePath") as? String
+                val shouldCropImage = arguments?.get("cropImage") as? Boolean
+
                 if (imagePath != null) {
-                    removeBackground(imagePath, result)
+                    removeBackgroundFromFile(imagePath, shouldCropImage!!, result)
                 } else {
                     sendErrorResult(result, 0, "Invalid arguments or unable to load image")
                 }
@@ -55,10 +57,11 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    // Removes the background from an image by decoding the image into a Bitmap,
-    // processing the segmentation mask using ML Kit's segmentation API, and then processing the segmentation mask
-    // to remove the background. Takes the file path of the image as input.
-    private fun removeBackground(imagePath: String, result: MethodChannel.Result) {
+    private fun removeBackgroundFromFile(
+        imagePath: String,
+        shouldCropImage: Boolean,
+        result: MethodChannel.Result
+    ) {
         if (imagePath.isEmpty()) {
             sendErrorResult(result, 0, "Image path cannot be empty")
             return
@@ -81,64 +84,57 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val inputImage = InputImage.fromBitmap(bitmap, 0)
 
             segmenter.process(inputImage)
-                    .addOnSuccessListener { segmentationMask ->
-                        width = segmentationMask.width
-                        height = segmentationMask.height
+                .addOnSuccessListener { segmentationMask ->
+                    width = segmentationMask.width
+                    height = segmentationMask.height
 
-                        processSegmentationMask(result, bitmap, segmentationMask.buffer)
-                    }
-                    .addOnFailureListener { exception ->
-                        sendErrorResult(result, 0, exception.message)
-                    }
+                    processSegmentationMask(
+                        result,
+                        bitmap,
+                        segmentationMask.buffer,
+                        shouldCropImage
+                    )
+                }
+                .addOnFailureListener { exception ->
+                    sendErrorResult(result, 0, exception.message)
+                }
+                .addOnFailureListener { exception ->
+                    sendErrorResult(result, 0, exception.message)
+                }
         } catch (e: Exception) {
             sendErrorResult(result, 0, e.message)
         }
     }
 
-    // Processes the segmentation mask obtained from ML Kit's segmentation API.
-    // Creates a new Bitmap, sets transparent pixels for the background, and crops the image to remove excess
-    // transparent areas.
-    private fun processSegmentationMask(result: MethodChannel.Result, bitmap: Bitmap, buffer: ByteBuffer) {
+    private fun processSegmentationMask(
+        result: MethodChannel.Result,
+        bitmap: Bitmap,
+        buffer: ByteBuffer,
+        shouldCropImage: Boolean
+    ) {
         CoroutineScope(Dispatchers.IO).launch {
             val bgConf = FloatArray(width * height)
             buffer.rewind()
             buffer.asFloatBuffer().get(bgConf)
-            val newBmp = bitmap.copy(bitmap.config, true)
+            var newBmp = bitmap.copy(bitmap.config, true)
+            var resultBmp: Bitmap?
 
-            var minX = newBmp.width
-            var minY = newBmp.height
-            var maxX = 0
-            var maxY = 0
-
-            val pixels = IntArray(newBmp.width * newBmp.height)
-            newBmp.getPixels(pixels, 0, newBmp.width, 0, 0, newBmp.width, newBmp.height)
-
-            for (y in 0 until height) {
-                for (x in 0 until width) {
-                    val index = y * width + x
-                    val conf = (1.0f - bgConf[index]) * 255
-                    if (conf >= 100) {
-                        newBmp.setPixel(x, y, Color.TRANSPARENT)
-                    } else {
-                        if (pixels[x + y * bitmap.width] != Color.TRANSPARENT) {
-                            minX = minOf(minX, x)
-                            minY = minOf(minY, y)
-                            maxX = maxOf(maxX, x)
-                            maxY = maxOf(maxY, y)
-                        }
-                    }
-                }
+            if (shouldCropImage) {
+                resultBmp = cropImage(newBmp, bgConf)
+            } else {
+                makeBackgroundTransparent(newBmp, bgConf)
+                resultBmp = newBmp
             }
 
-            val resultBmp = Bitmap.createBitmap(newBmp, minX, minY, maxX - minX + 1, maxY - minY + 1)
-
             val targetWidth = 1080
-            val targetHeight = (resultBmp.height.toFloat() / resultBmp.width.toFloat() * targetWidth).toInt()
+            val targetHeight =
+                (resultBmp!!.height.toFloat() / resultBmp.width.toFloat() * targetWidth).toInt()
             val resizedBmp = Bitmap.createScaledBitmap(resultBmp, targetWidth, targetHeight, true)
 
-            val processedBmp = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+            val processedBmp =
+                Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(processedBmp)
-            canvas.drawColor(Color.WHITE)
+            canvas.drawColor(Color.TRANSPARENT)
 
             val left = (targetWidth - resizedBmp.width) / 2f
             val top = (targetHeight - resizedBmp.height) / 2f
@@ -149,18 +145,57 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             val processedImageBytes = outputStream.toByteArray()
 
             val response = mapOf(
-                    "status" to 1,
-                    "imageBytes" to processedImageBytes.toList(),
-                    "message" to "Success"
+                "status" to 1,
+                "imageBytes" to processedImageBytes.toList(),
+                "message" to "Success"
             )
             result.success(response)
         }
     }
 
+    private fun cropImage(bitmap: Bitmap, bgConf: FloatArray): Bitmap {
+        var minX = bitmap.width
+        var minY = bitmap.height
+        var maxX = 0
+        var maxY = 0
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val index = y * width + x
+                val conf = (1.0f - bgConf[index]) * 255
+                if (conf >= 100) {
+                    bitmap.setPixel(x, y, Color.TRANSPARENT)
+                } else {
+                    if (pixels[x + y * bitmap.width] != Color.TRANSPARENT) {
+                        minX = minOf(minX, x)
+                        minY = minOf(minY, y)
+                        maxX = maxOf(maxX, x)
+                        maxY = maxOf(maxY, y)
+                    }
+                }
+            }
+        }
+        return Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+    }
+
+    private fun makeBackgroundTransparent(bitmap: Bitmap, bgConf: FloatArray) {
+        for (y in 0 until bitmap.height) {
+            for (x in 0 until bitmap.width) {
+                val index = y * bitmap.width + x
+                val conf = (1.0f - bgConf[index]) * 255
+                if (conf >= 100) {
+                    bitmap.setPixel(x, y, Color.TRANSPARENT)
+                }
+            }
+        }
+    }
+
     private fun sendErrorResult(result: MethodChannel.Result, status: Int, errorMessage: String?) {
         val errorResult = mapOf(
-                "status" to status,
-                "message" to errorMessage
+            "status" to status,
+            "message" to errorMessage
         )
         result.success(errorResult)
     }

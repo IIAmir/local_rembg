@@ -48,6 +48,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final ImagePicker picker = ImagePicker();
   ProcessStatus status = ProcessStatus.none;
+  String? message;
   Uint8List? imageBytes;
 
   Future<void> _pickPhoto() async {
@@ -58,16 +59,19 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         status = ProcessStatus.loading;
       });
+      // Uint8List pickedFileBytes = await pickedFile.readAsBytes();
       LocalRembgResultModel localRembgResultModel =
           await LocalRembg.removeBackground(
         imagePath: pickedFile.path,
+        // imageUint8List: pickedFileBytes,
       );
       if (localRembgResultModel.status == 1) {
+        imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
         setState(() {
-          imageBytes = Uint8List.fromList(localRembgResultModel.imageBytes!);
           status = ProcessStatus.success;
         });
       } else {
+        message = localRembgResultModel.errorMessage;
         setState(() {
           status = ProcessStatus.failure;
         });
@@ -99,12 +103,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
               ),
             if (status == ProcessStatus.failure)
-              const Text(
-                'Failed to process image',
-                style: TextStyle(
+              Text(
+                message ?? 'Failed to process image',
+                style: const TextStyle(
                   color: Colors.red,
                   fontSize: 18,
                 ),
+                textAlign: TextAlign.center,
               ),
             if (status == ProcessStatus.none)
               const Text(

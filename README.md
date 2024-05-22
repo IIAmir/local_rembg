@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://fastupload.io/secure/file/RMKGJX2r431oP"/>
+<img src="https://i.ibb.co/09zQZP5/befor-after2.png"/>
 
 ## Overview
 
@@ -9,24 +9,28 @@ images in both Android and iOS platforms.This library provides developers with a
 interface to integrate background removal functionality into their mobile applications, enhancing
 user experience and enabling a wide range of creative possibilities.
 
+If you want to remove objects from your image in Flutter, you can use the [Object Remover library](https://pub.dev/packages/object_remover).
+
 ## System requirements
 
-- iOS: 15
-- Android: 4.4 (SDK 19)
+- iOS: 15+
+- Android: 4.4+ (SDK 19)
 
 ## Features
 
-- Offline Support: Perform background removal tasks without internet, ensuring fast performance in
-  offline mode.
-- Cross-Platform: Remove backgrounds from images on both Android and iOS platforms.
+- Offline Support: Remove backgrounds without internet for quick performance offline.
+- Object and Person Detection: Easily remove backgrounds from both objects and people.
+- Cross-Platform: Delete backgrounds on Android and iOS.
 
 ## Getting started
 
 Add the plugin package to the `pubspec.yaml` file in your project:
 
+`If you only require person detection on iOS,consider using version 0.0.8 to reduce your app's size.`
+
 ```yaml
 dependencies:
-  local_rembg: ^0.0.5
+  local_rembg: ^1.1.2
 ```
 
 Install the new dependency:
@@ -40,8 +44,11 @@ Call the `removeBackground` function in your code:
 ```dart
 Future<LocalRembgResultModel> removeBackground() async {
   LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
-      imagePath: // Your Image Path,
+     imagePath: // Your Image Path ,
+     imageUint8List: // Your image Uint8List (only supported on iOS) ,
+     cropTheImage: // Crop the segmented image (Default true) ,
   );
+  return localRembgResultModel;
 }
 ```
 
@@ -51,4 +58,5 @@ Explore our [Example Project](./example) to see how the Local Rembg SDK can be u
 application.
 
 ## License Terms
+
 This library is provided under the [Apache License](LICENSE).
