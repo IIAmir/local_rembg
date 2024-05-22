@@ -22,12 +22,14 @@ class LocalRembg {
     Uint8List? imageUint8List,
     bool? cropTheImage = true,
   }) async {
+
     if (imagePath == null && imageUint8List == null) {
       return LocalRembgResultModel(
         status: 0,
         imageBytes: null,
         errorMessage:
             "You must provide either 'imagePath' or 'imageUint8List'.",
+
       );
     }
 
