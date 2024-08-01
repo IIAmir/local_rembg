@@ -206,7 +206,7 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val response = mapOf(
             "status" to 0,
             "imageBytes" to originalImageBytes.toList(),
-            "message" to "Returning original image"
+            "message" to "Unable to remove the background"
         )
         result.success(response)
     }
