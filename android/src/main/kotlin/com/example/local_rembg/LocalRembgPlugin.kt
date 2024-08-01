@@ -177,7 +177,11 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
         }
-        return Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+        if (minX < maxX && minY < maxY) {
+            return Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+        } else {
+            return bitmap
+        }
     }
 
     private fun makeBackgroundTransparent(bitmap: Bitmap, bgConf: FloatArray) {
