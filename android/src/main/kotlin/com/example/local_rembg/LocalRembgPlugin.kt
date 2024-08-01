@@ -96,13 +96,10 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     )
                 }
                 .addOnFailureListener { exception ->
-                    sendErrorResult(result, 0, exception.message)
-                }
-                .addOnFailureListener { exception ->
-                    sendErrorResult(result, 0, exception.message)
+                    returnOriginalImage(result, bitmap)
                 }
         } catch (e: Exception) {
-            sendErrorResult(result, 0, e.message)
+            returnOriginalImage(result, null)
         }
     }
 
@@ -124,6 +121,11 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             } else {
                 makeBackgroundTransparent(newBmp, bgConf)
                 resultBmp = newBmp
+            }
+
+            if (isImageBlank(resultBmp)) {
+                returnOriginalImage(result, bitmap)
+                return@launch
             }
 
             val targetWidth = 1080
@@ -177,10 +179,10 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
         }
-        if (minX < maxX && minY < maxY) {
-            return Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+        return if (minX < maxX && minY < maxY) {
+            Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
         } else {
-            return bitmap
+            bitmap
         }
     }
 
@@ -194,6 +196,28 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
         }
+    }
+
+    private fun returnOriginalImage(result: MethodChannel.Result, bitmap: Bitmap?) {
+        val outputStream = ByteArrayOutputStream()
+        bitmap?.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        val originalImageBytes = outputStream.toByteArray()
+
+        val response = mapOf(
+            "status" to 0,
+            "imageBytes" to originalImageBytes.toList(),
+            "message" to "Returning original image"
+        )
+        result.success(response)
+    }
+
+    private fun isImageBlank(bitmap: Bitmap?): Boolean {
+        if (bitmap == null) return true
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        return pixels.all { it == Color.TRANSPARENT }
     }
 
     private fun sendErrorResult(result: MethodChannel.Result, status: Int, errorMessage: String?) {
