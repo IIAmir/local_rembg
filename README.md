@@ -1,6 +1,6 @@
 # Local Background Remover (Android/IOS)
 
-<img src="https://i.ibb.co/09zQZP5/befor-after2.png"/>
+<img src="https://i.ibb.co/xhtjGsD/Luminosity.png"/>
 
 ## Overview
 
@@ -8,8 +8,6 @@ The Background Removal Library is a powerful tool designed to seamlessly remove 
 images in both Android and iOS platforms.This library provides developers with an easy-to-use
 interface to integrate background removal functionality into their mobile applications, enhancing
 user experience and enabling a wide range of creative possibilities.
-
-If you want to remove objects from your image in Flutter, you can use the [Object Remover library](https://pub.dev/packages/object_remover).
 
 ## System requirements
 
@@ -30,7 +28,7 @@ Add the plugin package to the `pubspec.yaml` file in your project:
 
 ```yaml
 dependencies:
-  local_rembg: ^1.1.2
+  local_rembg: ^1.1.3
 ```
 
 Install the new dependency:
@@ -45,7 +43,7 @@ Call the `removeBackground` function in your code:
 Future<LocalRembgResultModel> removeBackground() async {
   LocalRembgResultModel localRembgResultModel = await LocalRembg.removeBackground(
      imagePath: // Your Image Path ,
-     imageUint8List: // Your image Uint8List (only supported on iOS) ,
+     imageUint8List: // Your image Uint8List ,
      cropTheImage: // Crop the segmented image (Default true) ,
   );
   return localRembgResultModel;

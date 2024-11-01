@@ -42,12 +42,23 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "removeBackground" -> {
                 val arguments = call.arguments as? Map<String, Any>
                 val imagePath = arguments?.get("imagePath") as? String
-                val shouldCropImage = arguments?.get("cropImage") as? Boolean
+                val imageUint8List = arguments?.get("imageUint8List") as? ByteArray
+                val shouldCropImage = arguments?.get("cropImage") as? Boolean ?: false
 
-                if (imagePath != null) {
-                    removeBackgroundFromFile(imagePath, shouldCropImage!!, result)
-                } else {
-                    sendErrorResult(result, 0, "Invalid arguments or unable to load image")
+                when {
+                    imagePath != null -> removeBackgroundFromFile(
+                        imagePath,
+                        shouldCropImage,
+                        result
+                    )
+
+                    imageUint8List != null -> removeBackgroundFromUint8List(
+                        imageUint8List,
+                        shouldCropImage,
+                        result
+                    )
+
+                    else -> sendErrorResult(result, 0, "Invalid arguments or unable to load image")
                 }
             }
 
@@ -55,6 +66,37 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 result.notImplemented()
             }
         }
+    }
+
+    private fun removeBackgroundFromUint8List(
+        imageUint8List: ByteArray,
+        shouldCropImage: Boolean,
+        result: MethodChannel.Result
+    ) {
+        val bitmap = BitmapFactory.decodeByteArray(imageUint8List, 0, imageUint8List.size)
+        if (bitmap == null) {
+            sendErrorResult(result, 0, "Failed to decode Uint8List image")
+            return
+        }
+
+        processImage(bitmap, shouldCropImage, result)
+    }
+
+    private fun processImage(
+        bitmap: Bitmap,
+        shouldCropImage: Boolean,
+        result: MethodChannel.Result
+    ) {
+        val inputImage = InputImage.fromBitmap(bitmap, 0)
+        segmenter.process(inputImage)
+            .addOnSuccessListener { segmentationMask ->
+                width = segmentationMask.width
+                height = segmentationMask.height
+                processSegmentationMask(result, bitmap, segmentationMask.buffer, shouldCropImage)
+            }
+            .addOnFailureListener { exception ->
+                sendErrorResult(result, 0, exception.message ?: "Segmentation failed")
+            }
     }
 
     private fun removeBackgroundFromFile(
@@ -79,15 +121,17 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 inSampleSize = 2
             }
 
-            val bitmap = BitmapFactory.decodeFile(imagePath, options) ?: return
+            val bitmap = BitmapFactory.decodeFile(imagePath, options)
+            if (bitmap == null) {
+                sendErrorResult(result, 0, "Failed to decode image file")
+                return
+            }
 
             val inputImage = InputImage.fromBitmap(bitmap, 0)
-
             segmenter.process(inputImage)
                 .addOnSuccessListener { segmentationMask ->
                     width = segmentationMask.width
                     height = segmentationMask.height
-
                     processSegmentationMask(
                         result,
                         bitmap,
@@ -96,13 +140,10 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     )
                 }
                 .addOnFailureListener { exception ->
-                    sendErrorResult(result, 0, exception.message)
-                }
-                .addOnFailureListener { exception ->
-                    sendErrorResult(result, 0, exception.message)
+                    sendErrorResult(result, 0, exception.message ?: "Segmentation failed")
                 }
         } catch (e: Exception) {
-            sendErrorResult(result, 0, e.message)
+            sendErrorResult(result, 0, e.message ?: "Error processing image file")
         }
     }
 
@@ -113,47 +154,59 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         shouldCropImage: Boolean
     ) {
         CoroutineScope(Dispatchers.IO).launch {
-            val bgConf = FloatArray(width * height)
-            buffer.rewind()
-            buffer.asFloatBuffer().get(bgConf)
-            var newBmp = bitmap.copy(bitmap.config, true)
-            var resultBmp: Bitmap?
+            try {
+                val bgConf = FloatArray(width * height)
+                buffer.rewind()
+                buffer.asFloatBuffer().get(bgConf)
 
-            if (shouldCropImage) {
-                resultBmp = cropImage(newBmp, bgConf)
-            } else {
-                makeBackgroundTransparent(newBmp, bgConf)
-                resultBmp = newBmp
+                val newBmp = bitmap.copy(bitmap.config, true) ?: run {
+                    sendErrorResult(result, 0, "Failed to copy bitmap")
+                    return@launch
+                }
+
+                val resultBmp: Bitmap? = if (shouldCropImage) {
+                    cropImage(newBmp, bgConf)
+                } else {
+                    makeBackgroundTransparent(newBmp, bgConf)
+                    newBmp
+                }
+
+                val targetWidth = 1080
+                val targetHeight =
+                    (resultBmp!!.height.toFloat() / resultBmp.width.toFloat() * targetWidth).toInt()
+                val resizedBmp =
+                    Bitmap.createScaledBitmap(resultBmp, targetWidth, targetHeight, true)
+
+                val processedBmp =
+                    Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+                Canvas(processedBmp).apply {
+                    drawColor(Color.TRANSPARENT)
+                    drawBitmap(
+                        resizedBmp,
+                        (targetWidth - resizedBmp.width) / 2f,
+                        (targetHeight - resizedBmp.height) / 2f,
+                        null
+                    )
+                }
+
+                val outputStream = ByteArrayOutputStream()
+                processedBmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                val processedImageBytes = outputStream.toByteArray()
+
+                result.success(
+                    mapOf(
+                        "status" to 1,
+                        "imageBytes" to processedImageBytes.toList(),
+                        "message" to "Success"
+                    )
+                )
+            } catch (e: Exception) {
+                sendErrorResult(result, 0, e.message ?: "Error processing segmentation mask")
             }
-
-            val targetWidth = 1080
-            val targetHeight =
-                (resultBmp!!.height.toFloat() / resultBmp.width.toFloat() * targetWidth).toInt()
-            val resizedBmp = Bitmap.createScaledBitmap(resultBmp, targetWidth, targetHeight, true)
-
-            val processedBmp =
-                Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(processedBmp)
-            canvas.drawColor(Color.TRANSPARENT)
-
-            val left = (targetWidth - resizedBmp.width) / 2f
-            val top = (targetHeight - resizedBmp.height) / 2f
-            canvas.drawBitmap(resizedBmp, left, top, null)
-
-            val outputStream = ByteArrayOutputStream()
-            processedBmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            val processedImageBytes = outputStream.toByteArray()
-
-            val response = mapOf(
-                "status" to 1,
-                "imageBytes" to processedImageBytes.toList(),
-                "message" to "Success"
-            )
-            result.success(response)
         }
     }
 
-    private fun cropImage(bitmap: Bitmap, bgConf: FloatArray): Bitmap {
+    private fun cropImage(bitmap: Bitmap, bgConf: FloatArray): Bitmap? {
         var minX = bitmap.width
         var minY = bitmap.height
         var maxX = 0
@@ -177,7 +230,14 @@ class LocalRembgPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 }
             }
         }
-        return Bitmap.createBitmap(bitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+
+        val cropWidth = maxX - minX + 1
+        val cropHeight = maxY - minY + 1
+        if (cropWidth <= 0 || cropHeight <= 0) {
+            return bitmap
+        }
+
+        return Bitmap.createBitmap(bitmap, minX, minY, cropWidth, cropHeight)
     }
 
     private fun makeBackgroundTransparent(bitmap: Bitmap, bgConf: FloatArray) {

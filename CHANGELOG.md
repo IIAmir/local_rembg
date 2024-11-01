@@ -35,3 +35,7 @@
 
 * Support Uint8List in IOS
 * Prevent to resize image in person segmentation in IOS
+
+## 1.1.3
+
+* Support Uint8List in Android
